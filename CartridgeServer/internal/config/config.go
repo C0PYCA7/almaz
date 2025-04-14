@@ -25,9 +25,8 @@ type ServerConfig struct {
 }
 
 type KafkaConfig struct {
-	Port        string
-	DbTopic     string
-	ReportTopic string
+	Port    string
+	DbTopic string
 }
 
 /*
@@ -55,9 +54,8 @@ func New() *Config {
 			Port: os.Getenv("SERVER_PORT"),
 		},
 		Kafka: KafkaConfig{
-			Port:        os.Getenv("KAFKA_PORT"),
-			DbTopic:     os.Getenv("KAFKA_DB_TOPIC"),
-			ReportTopic: os.Getenv("KAFKA_REPORT_TOPIC"),
+			Port:    os.Getenv("KAFKA_PORT"),
+			DbTopic: os.Getenv("KAFKA_DB_TOPIC"),
 		},
 	}
 }

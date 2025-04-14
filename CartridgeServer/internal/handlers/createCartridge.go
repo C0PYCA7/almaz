@@ -1,10 +1,14 @@
 package handlers
 
 import (
+	"CartridgeServer/internal/config"
+	"CartridgeServer/internal/kafka"
 	"CartridgeServer/internal/models"
+	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"log/slog"
 	"net/http"
+	"time"
 )
 
 type CreateRequest struct {
@@ -15,13 +19,12 @@ type CreateResponse struct {
 	Message string `json:"message"`
 }
 
-func (h *Handler) CreateCartridgeHandler(log *slog.Logger) gin.HandlerFunc {
+const RECEIVED_FROM = "получено из подразделения"
+
+func (h *Handler) CreateCartridgeHandler(log *slog.Logger, sender kafka.Sender, config config.KafkaConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		var (
-			messages []models.DbTopicMessage
-			message  models.DbTopicMessage
-		)
+		var message models.DbTopicMessage
 
 		const op = "CartridgeServer/internal/handlers/CreateCartridge"
 		log = log.With("op", op)
@@ -39,15 +42,27 @@ func (h *Handler) CreateCartridgeHandler(log *slog.Logger) gin.HandlerFunc {
 		}
 		for _, cartridge := range req.Cartridges {
 			message = models.DbTopicMessage{
-				Action: "create",
-				Cartridge: models.CartridgeModel{
-					Name:          cartridge.Name,
-					Parameters:    cartridge.Parameters,
-					ReceivedFrom:  cartridge.ReceivedFrom,
-					BarcodeNumber: cartridge.BarcodeNumber,
-				},
+				Action:        "create",
+				Name:          cartridge.Name,
+				Parameters:    cartridge.Parameters,
+				BarcodeNumber: cartridge.BarcodeNumber,
+				Timestamp:     time.Now(),
+				ReceivedFrom:  cartridge.ReceivedFrom,
+				NewStatus:     RECEIVED_FROM,
 			}
-			messages = append(messages, message)
+			dataBytes, err := json.Marshal(message)
+			if err != nil {
+				log.Error("failed to encode message", slog.Any("err", err))
+				c.JSON(http.StatusBadRequest, CreateResponse{
+					Message: "failed to encode message",
+				})
+				return
+			}
+			sender.SendMessage(config.DbTopic, dataBytes)
 		}
+		c.JSON(http.StatusOK, CreateResponse{
+			Message: "Сообщения приняты, вскоре будут обработаны",
+		})
+		return
 	}
 }

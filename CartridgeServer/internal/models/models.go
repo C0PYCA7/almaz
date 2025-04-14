@@ -23,6 +23,12 @@ type CreateCartridgeModel struct {
 }
 
 type DbTopicMessage struct {
-	Action    string         `json:"action"`
-	Cartridge CartridgeModel `json:"cartridge"`
+	Action        string    `json:"action"`
+	Name          string    `json:"name"`
+	BarcodeNumber int       `json:"barcodeNumber"`
+	Parameters    string    `json:"parameters"`
+	NewStatus     string    `json:"newStatus"`
+	Timestamp     time.Time `json:"timestamp"`
+	ReceivedFrom  string    `json:"receivedFrom"`
+	SendTo        string    `json:"sendTo"`
 }
