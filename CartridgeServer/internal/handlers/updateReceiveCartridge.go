@@ -14,7 +14,7 @@ import (
 type UpdateReceiveRequest struct {
 	BarcodeNumber int    `json:"barcodeNumber"`
 	NewStatus     string `json:"newStatus"`
-	ReceiveFrom   string `json:"receiveFrom"`
+	//ReceiveFrom   string `json:"receiveFrom"` // точно ли он нужен?
 }
 
 type UpdateReceiveResponse struct {
@@ -39,24 +39,26 @@ func (h *Handler) UpdateReceiveCartridgeHandler(log *slog.Logger, sender kafka.S
 		}
 
 		message := models.DbTopicMessage{
-			Action:        "update",
+			Action:        "updateReceive",
 			BarcodeNumber: req.BarcodeNumber,
 			NewStatus:     req.NewStatus,
 			Timestamp:     time.Now(),
-			ReceivedFrom:  req.ReceiveFrom,
+			//ReceivedFrom:  req.ReceiveFrom,
 		}
 
 		dataBytes, err := json.Marshal(message)
 		if err != nil {
 			log.Error("failed to encode message", slog.Any("err", err))
 			c.JSON(http.StatusBadRequest, UpdateReceiveResponse{
-				Message: "failed to encode message",
+				BarcodeNumber: req.BarcodeNumber,
+				Message:       "failed to encode message",
 			})
 			return
 		}
 		sender.SendMessage(config.DbTopic, dataBytes)
 		c.JSON(http.StatusOK, UpdateReceiveResponse{
-			Message: "Сообщения приняты, вскоре будут обработаны",
+			BarcodeNumber: req.BarcodeNumber,
+			Message:       "Сообщения приняты, вскоре будут обработаны",
 		})
 		return
 	}

@@ -12,9 +12,9 @@ import (
 )
 
 type UpdateSendRequest struct {
-	BarcodeNumber int    `json:"barcodeNumber"`
-	NewStatus     string `json:"newStatus"`
-	SendTo        string `json:"sendTo"`
+	BarcodeNumber     int    `json:"barcodeNumber"`
+	NewStatus         string `json:"newStatus"`
+	SendToSubdivision string `json:"sendToSubdivision"`
 }
 
 type UpdateSendResponse struct {
@@ -39,24 +39,26 @@ func (h *Handler) UpdateSendCartridgeHandler(log *slog.Logger, sender kafka.Send
 		}
 
 		message := models.DbTopicMessage{
-			Action:        "update",
+			Action:        "updateSend",
 			BarcodeNumber: req.BarcodeNumber,
 			NewStatus:     req.NewStatus,
 			Timestamp:     time.Now(),
-			SendTo:        req.SendTo,
+			SendTo:        req.SendToSubdivision,
 		}
 
 		dataBytes, err := json.Marshal(message)
 		if err != nil {
 			log.Error("failed to encode message", slog.Any("err", err))
 			c.JSON(http.StatusBadRequest, UpdateReceiveResponse{
-				Message: "failed to encode message",
+				BarcodeNumber: req.BarcodeNumber,
+				Message:       "failed to encode message",
 			})
 			return
 		}
 		sender.SendMessage(config.DbTopic, dataBytes)
 		c.JSON(http.StatusOK, UpdateSendResponse{
-			Message: "Сообщения приняты, вскоре будут обработаны",
+			BarcodeNumber: req.BarcodeNumber,
+			Message:       "Сообщения приняты, вскоре будут обработаны",
 		})
 		return
 	}

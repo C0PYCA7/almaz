@@ -39,5 +39,6 @@ func main() {
 	r.POST("/create", h.CreateCartridgeHandler(log, asyncProducer, cfg.Kafka))
 	r.DELETE("/delete", h.DeleteCartridgeHandler(log, asyncProducer, cfg.Kafka))
 
+	//TODO: будет еще один эндпоинт, который будет формировать отчет
 	r.Run(cfg.Server.Port)
 }
