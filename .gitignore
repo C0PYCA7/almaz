@@ -1,3 +1,5 @@
 .idea
 CartridgeServer/config/.env
 DbService/config/.env
+NotificationService/config/.env
+ReportService/config/.env

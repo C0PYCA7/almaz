@@ -7,23 +7,18 @@ import (
 )
 
 type Config struct {
-	Database DatabaseConfig
-	Kafka    KafkaConfig
+	Server ServerConfig
+	Kafka  KafkaConfig
 }
 
-type DatabaseConfig struct {
-	Host     string
-	Port     string
-	Username string
-	Password string
-	Database string
+type ServerConfig struct {
+	Port string
 }
 
 type KafkaConfig struct {
 	Port              string
-	DbTopic           string
-	GroupID           string
 	NotificationTopic string
+	GroupID           string
 }
 
 /*
@@ -40,16 +35,11 @@ func New() *Config {
 		}
 	}
 	return &Config{
-		Database: DatabaseConfig{
-			Host:     os.Getenv("POSTGRES_HOST"),
-			Port:     os.Getenv("POSTGRES_PORT"),
-			Username: os.Getenv("POSTGRES_USER"),
-			Password: os.Getenv("POSTGRES_PASSWORD"),
-			Database: os.Getenv("POSTGRES_DATABASE"),
+		Server: ServerConfig{
+			Port: os.Getenv("SERVER_PORT"),
 		},
 		Kafka: KafkaConfig{
 			Port:              os.Getenv("KAFKA_PORT"),
-			DbTopic:           os.Getenv("KAFKA_DB_TOPIC"),
 			NotificationTopic: os.Getenv("KAFKA_NOTIFICATION_TOPIC"),
 			GroupID:           os.Getenv("KAFKA_GROUP_ID"),
 		},

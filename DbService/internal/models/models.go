@@ -37,3 +37,18 @@ type UpdateCartridgeSend struct {
 type DeleteCartridge struct {
 	BarcodeNumber int `json:"barcodeNumber"`
 }
+
+type Sender interface {
+	SendMessage(topic string, data []byte)
+}
+
+type ReportTopicMessage struct {
+	BarcodeNumber int    `json:"barcodeNumber"`
+	Action        string `json:"action"`
+}
+
+type NotificationTopicMessage struct {
+	BarcodeNumber int    `json:"barcodeNumber"`
+	Action        string `json:"action"`
+	Error         string `json:"error"`
+}

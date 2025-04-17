@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"DbService/internal/models"
+	"DbService/internal/observer"
 	"DbService/internal/storage"
 	"encoding/json"
 	"errors"
@@ -25,8 +26,9 @@ const (
 )
 
 type Consumer struct {
-	Ready    chan bool
-	Database Database
+	Ready      chan bool
+	Database   Database
+	Observable *observer.Observable
 }
 
 func (consumer *Consumer) Setup(sarama.ConsumerGroupSession) error {
@@ -81,6 +83,7 @@ func (consumer *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, clai
 }
 
 func (consumer *Consumer) handleMessage(msg *models.DbTopicMessage) error {
+	var err error
 	switch msg.Action {
 	case ACTION_CREATE:
 		cartridge := &models.CreateCartridge{
@@ -90,7 +93,7 @@ func (consumer *Consumer) handleMessage(msg *models.DbTopicMessage) error {
 			ReceivedFrom:  msg.ReceivedFrom,
 			Timestamp:     msg.Timestamp,
 		}
-		return consumer.Database.CreateCartridge(cartridge)
+		err = consumer.Database.CreateCartridge(cartridge)
 
 	case ACTION_UPDATE_SEND:
 		update := &models.UpdateCartridgeSend{
@@ -99,7 +102,7 @@ func (consumer *Consumer) handleMessage(msg *models.DbTopicMessage) error {
 			SendTo:        msg.SendTo,
 			Timestamp:     msg.Timestamp,
 		}
-		return consumer.Database.UpdateCartridgeSendStatus(update)
+		err = consumer.Database.UpdateCartridgeSendStatus(update)
 
 	case ACTION_UPDATE_RECEIVE:
 		update := &models.UpdateCartridgeReceive{
@@ -107,12 +110,22 @@ func (consumer *Consumer) handleMessage(msg *models.DbTopicMessage) error {
 			NewStatus:     msg.NewStatus,
 			Timestamp:     msg.Timestamp,
 		}
-		return consumer.Database.UpdateCartridgeReceiveStatus(update)
+		err = consumer.Database.UpdateCartridgeReceiveStatus(update)
 
 	case ACTION_DELETE:
-		return consumer.Database.DeleteCartridge(msg.BarcodeNumber)
+		err = consumer.Database.DeleteCartridge(msg.BarcodeNumber)
 
 	default:
-		return fmt.Errorf("unknown action: %s", msg.Action)
+		err = fmt.Errorf("unknown action: %s", msg.Action)
 	}
+
+	if consumer.Observable.Observers != nil {
+		if err != nil {
+			consumer.Observable.NotifyObservers(msg, err.Error())
+		} else {
+			consumer.Observable.NotifyObservers(msg, "")
+		}
+	}
+
+	return err
 }

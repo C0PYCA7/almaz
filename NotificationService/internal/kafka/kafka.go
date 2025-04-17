@@ -1,8 +1,7 @@
 package kafka
 
 import (
-	"DbService/internal/observer"
-	"DbService/internal/storage/postgres"
+	"NotificationService/internal/handlers"
 	"context"
 	"errors"
 	"github.com/IBM/sarama"
@@ -31,12 +30,11 @@ func NewConsumerGroup(addr, groupID string) (*ConsumerGroup, error) {
 	return &ConsumerGroup{Client: client}, nil
 }
 
-func (c *ConsumerGroup) StartListening(topic string, db *postgres.Database, observable *observer.Observable) {
+func (c *ConsumerGroup) StartListening(topic string, hub *handlers.Hub) {
 	keepRunning := true
 	consumer := Consumer{
-		Ready:      make(chan bool),
-		Database:   db,
-		Observable: observable,
+		Ready: make(chan bool),
+		Hub:   hub,
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 
