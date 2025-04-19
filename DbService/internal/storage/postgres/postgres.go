@@ -24,3 +24,7 @@ func New(cfg config.DatabaseConfig) *Database {
 		db: db,
 	}
 }
+
+func (d *Database) Close() {
+	d.db.Close()
+}

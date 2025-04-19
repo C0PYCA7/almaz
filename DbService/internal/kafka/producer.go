@@ -87,3 +87,10 @@ func (a *AsyncProducer) SendMessage(topic string, data []byte) {
 		Value: sarama.ByteEncoder(data),
 	}
 }
+
+func (a *AsyncProducer) Close() {
+	err := a.Producer.Close()
+	if err != nil {
+		return
+	}
+}

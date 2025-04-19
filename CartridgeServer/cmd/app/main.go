@@ -6,9 +6,14 @@ import (
 	"CartridgeServer/internal/kafka"
 	"CartridgeServer/internal/logger"
 	"CartridgeServer/internal/storage/postgres"
+	"context"
 	"github.com/gin-gonic/gin"
 	"log/slog"
+	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
 func main() {
@@ -39,6 +44,35 @@ func main() {
 	r.POST("/create", h.CreateCartridgeHandler(log, asyncProducer, cfg.Kafka))
 	r.DELETE("/delete", h.DeleteCartridgeHandler(log, asyncProducer, cfg.Kafka))
 
+	server := &http.Server{
+		Addr:    ":" + cfg.Server.Port,
+		Handler: r,
+	}
+
 	//TODO: будет еще один эндпоинт, который будет формировать отчет
-	r.Run(cfg.Server.Port)
+
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Error("Failed to listen and serve", slog.Any("err", err))
+			os.Exit(1)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	log.Info("Shutting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		log.Error("Server forced to shutdown", slog.Any("err", err))
+	}
+	if err := asyncProducer.Close(); err != nil {
+		log.Error("Failed to close async producer", slog.Any("err", err))
+	}
+	log.Info("Closing database...")
+	db.Close()
+	log.Info("Server gracefully stopped")
 }

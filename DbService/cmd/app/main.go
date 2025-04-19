@@ -8,6 +8,8 @@ import (
 	"DbService/internal/storage/postgres"
 	"log/slog"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
 func main() {
@@ -37,5 +39,12 @@ func main() {
 		log.Error("Error creating consumer group", slog.Any("error", err))
 		os.Exit(1)
 	}
-	consumerGroup.StartListening(cfg.Kafka.DbTopic, db, observable)
+	go consumerGroup.StartListening(cfg.Kafka.DbTopic, db, observable)
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	asyncProducer.Close()
+	db.Close()
 }
